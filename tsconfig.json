@@ -1,0 +1,11 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/middleware" },
+    { "path": "packages/example-server" },
+    { "path": "packages/tab-mcp" },
+    { "path": "packages/buyer-kit" },
+    { "path": "packages/ledger-ui" }
+  ]
+}

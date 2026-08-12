@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+*.tsbuildinfo
+
+# runtime ledger state
+.tab/
+
+# credentials — never commit
+.env
+.env.*
+credentials
+credentials.json
+*.key
+*.pem
+*.p12
+
+# logs / os
+*.log
+.DS_Store
+demo/logs/

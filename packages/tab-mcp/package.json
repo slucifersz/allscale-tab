@@ -1,0 +1,21 @@
+{
+  "name": "@tab/tab-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "bin": {
+    "tab-mcp": "./dist/src/bin/server.js"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "start": "node dist/src/bin/server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@tab/core": "*",
+    "@tab/middleware": "*",
+    "zod": "^3.25.76"
+  }
+}

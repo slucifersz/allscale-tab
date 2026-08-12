@@ -1,0 +1,12 @@
+{
+  "pricing": {
+    "default": "0.01",
+    "tools": {
+      "fx_rate": "0.01",
+      "fx_convert": "0.02"
+    }
+  },
+  "settleThreshold": "0.50",
+  "billingCycle": "threshold",
+  "creditLimit": "0.60"
+}

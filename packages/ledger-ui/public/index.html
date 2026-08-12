@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tab · Live Ledger</title>
+    <style>
+      :root {
+        --bg: #07090d;
+        --panel: #0e1219;
+        --panel-2: #131923;
+        --line: #1e2632;
+        --text: #e6ebf2;
+        --muted: #7c8798;
+        --accent: #35d07f;
+        --accent-dim: #1d7a4c;
+        --warn: #ffc857;
+        --danger: #ff5d5d;
+        --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: radial-gradient(1200px 600px at 20% -10%, #101a24 0%, var(--bg) 55%);
+        color: var(--text);
+        font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+        min-height: 100vh;
+        padding: 28px clamp(16px, 4vw, 48px) 40px;
+      }
+      header {
+        display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+        margin-bottom: 22px;
+      }
+      h1 {
+        font-size: 20px; letter-spacing: .14em; text-transform: uppercase;
+        margin: 0; font-weight: 650;
+      }
+      h1 .dot { color: var(--accent); }
+      .sub { color: var(--muted); font-size: 13px; }
+      .badge {
+        font-family: var(--mono); font-size: 11px; letter-spacing: .1em;
+        padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line);
+        background: var(--panel-2); color: var(--muted); text-transform: uppercase;
+      }
+      .badge.live { color: var(--accent); border-color: var(--accent-dim); }
+      .badge.stale { color: var(--warn); border-color: #6b5320; }
+
+      .grid { display: grid; gap: 16px; grid-template-columns: minmax(320px, 1.05fr) 1.55fr; }
+      @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+      .card {
+        background: linear-gradient(180deg, var(--panel) 0%, #0b0f16 100%);
+        border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px;
+      }
+      .card h2 {
+        margin: 0 0 14px; font-size: 11px; letter-spacing: .16em;
+        text-transform: uppercase; color: var(--muted); font-weight: 600;
+      }
+
+      .balance {
+        font-family: var(--mono); font-size: clamp(44px, 7vw, 68px); font-weight: 600;
+        letter-spacing: -.02em; font-variant-numeric: tabular-nums;
+        line-height: 1; display: flex; align-items: baseline; gap: 6px;
+      }
+      .balance .cur { font-size: .45em; color: var(--muted); }
+      .flash { animation: flash .55s ease-out; }
+      @keyframes flash {
+        0% { color: var(--accent); text-shadow: 0 0 26px rgba(53,208,127,.65); transform: translateY(-2px); }
+        100% { color: var(--text); text-shadow: none; transform: none; }
+      }
+      .meta-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+      .pill {
+        font-family: var(--mono); font-size: 11px; padding: 3px 9px; border-radius: 999px;
+        text-transform: uppercase; letter-spacing: .08em;
+      }
+      .pill.open { background: rgba(53,208,127,.12); color: var(--accent); }
+      .pill.settling { background: rgba(255,200,87,.13); color: var(--warn); }
+      .pill.delinquent { background: rgba(255,93,93,.14); color: var(--danger); }
+
+      .bar-wrap { margin-top: 18px; }
+      .bar {
+        position: relative; height: 12px; border-radius: 999px;
+        background: #121a24; overflow: hidden; border: 1px solid var(--line);
+      }
+      .bar .fill {
+        height: 100%; width: 0;
+        background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+        transition: width .45s cubic-bezier(.22,.9,.28,1);
+      }
+      .bar .fill.hot { background: linear-gradient(90deg, #a8611b, var(--warn)); }
+      .bar .fill.over { background: linear-gradient(90deg, #8f2222, var(--danger)); }
+      .marker {
+        position: absolute; top: -4px; bottom: -4px; width: 2px;
+        background: rgba(230,235,242,.55);
+      }
+      .bar-labels {
+        display: flex; justify-content: space-between; margin-top: 7px;
+        font-family: var(--mono); font-size: 11px; color: var(--muted);
+      }
+
+      .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 18px; }
+      .stat { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+      .stat .k { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+      .stat .v { font-family: var(--mono); font-size: 18px; font-variant-numeric: tabular-nums; margin-top: 3px; }
+
+      table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12.5px; }
+      th {
+        text-align: left; color: var(--muted); font-weight: 500; font-size: 10px;
+        letter-spacing: .12em; text-transform: uppercase; padding: 0 8px 8px; border-bottom: 1px solid var(--line);
+      }
+      td { padding: 7px 8px; border-bottom: 1px solid #151c26; font-variant-numeric: tabular-nums; }
+      tr:last-child td { border-bottom: none; }
+      td.amt { text-align: right; }
+      .t-charge { color: var(--text); }
+      .t-invoice { color: var(--warn); }
+      .t-payment { color: var(--accent); }
+      .t-cutoff { color: var(--danger); }
+      .t-reopen { color: var(--muted); }
+      .row-new { animation: rowin .6s ease-out; }
+      @keyframes rowin {
+        0% { background: rgba(53,208,127,.16); transform: translateX(-6px); opacity: .3; }
+        100% { background: transparent; transform: none; opacity: 1; }
+      }
+      .tag {
+        font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase;
+        padding: 1px 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--muted);
+      }
+
+      .term {
+        margin-top: 16px; background: #05070a; border: 1px solid var(--line);
+        border-radius: 12px; padding: 14px 16px; font-family: var(--mono); font-size: 12.5px;
+        max-height: 232px; overflow-y: auto;
+      }
+      .term .l { display: flex; gap: 9px; padding: 3px 0; white-space: pre-wrap; word-break: break-all; }
+      .term .l .arrow { color: var(--accent); flex: none; }
+      .term .l.seller .arrow { color: var(--warn); }
+      .term .l .who {
+        flex: none; color: var(--muted); font-size: 10px; text-transform: uppercase;
+        letter-spacing: .1em; padding-top: 2px; min-width: 44px;
+      }
+      .term .l.fresh { animation: termin .8s ease-out; }
+      @keyframes termin {
+        0% { background: rgba(53,208,127,.14); }
+        100% { background: transparent; }
+      }
+      .empty { color: var(--muted); font-family: var(--mono); font-size: 12.5px; padding: 6px 0; }
+      footer { margin-top: 22px; color: var(--muted); font-size: 11.5px; font-family: var(--mono); }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Tab <span class="dot">·</span> Live Ledger</h1>
+      <span class="sub" id="buyer">—</span>
+      <span class="badge" id="adapter">adapter …</span>
+      <span class="badge" id="conn">connecting</span>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Unbilled balance</h2>
+        <div class="balance" id="balance"><span class="cur">$</span><span id="balanceNum">0.00</span></div>
+        <div class="meta-row">
+          <span class="pill open" id="status">open</span>
+          <span class="sub" id="ref"></span>
+        </div>
+
+        <div class="bar-wrap">
+          <div class="bar">
+            <div class="fill" id="fill"></div>
+            <div class="marker" id="marker" hidden></div>
+          </div>
+          <div class="bar-labels">
+            <span id="limitLabel">limit $0.00</span>
+            <span id="thresholdLabel"></span>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><div class="k">Billed calls</div><div class="v" id="calls">0</div></div>
+          <div class="stat"><div class="k">Invoiced, unpaid</div><div class="v" id="outstanding">$0.00</div></div>
+          <div class="stat"><div class="k">Settled to date</div><div class="v" id="settled">$0.00</div></div>
+          <div class="stat"><div class="k">Cycles closed</div><div class="v" id="cycles">0</div></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Ledger entries</h2>
+        <table>
+          <thead>
+            <tr><th>Time</th><th>Type</th><th>Tool</th><th class="amt">Amount</th><th class="amt">Balance</th></tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div class="empty" id="rowsEmpty">no activity yet — call a paid tool to start the tab</div>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:16px">
+      <h2>Equivalent AllScale CLI · what actually settles the money</h2>
+      <div class="term" id="term"><div class="empty">waiting for settlement activity…</div></div>
+    </section>
+
+    <footer id="foot">polling …</footer>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      let apiBase = 'http://127.0.0.1:4788';
+      let lastBalance = null;
+      let seenEntries = new Set();
+      let seenCli = 0;
+      let firstPaint = true;
+
+      const fmt = (s) => (s === undefined || s === null ? '0.00' : String(s));
+      const cents = (s) => {
+        const m = /^(-?)(\d+)\.(\d{2})$/.exec(String(s ?? '0.00'));
+        if (!m) return 0;
+        const v = parseInt(m[2], 10) * 100 + parseInt(m[3], 10);
+        return m[1] === '-' ? -v : v;
+      };
+      const clock = (ts) => new Date(ts).toLocaleTimeString([], { hour12: false });
+
+      async function boot() {
+        try {
+          const cfg = await (await fetch('/config.json')).json();
+          if (cfg.apiBase) apiBase = cfg.apiBase;
+          if (cfg.settleThreshold) window.__threshold = cfg.settleThreshold;
+        } catch (_) { /* stand-alone file open: keep the default */ }
+        const override = new URLSearchParams(location.search).get('api');
+        if (override) apiBase = override;
+        $('foot').textContent = `polling ${apiBase}/ledger every 500ms`;
+        tick();
+        setInterval(tick, 500);
+      }
+
+      function setConn(state, label) {
+        const el = $('conn');
+        el.className = 'badge ' + state;
+        el.textContent = label;
+      }
+
+      async function tick() {
+        let snap;
+        try {
+          const res = await fetch(apiBase + '/ledger', { cache: 'no-store' });
+          snap = await res.json();
+          setConn('live', 'live');
+        } catch (e) {
+          setConn('stale', 'ledger offline');
+          return;
+        }
+        render(snap);
+      }
+
+      function pickTab(snap) {
+        const tabs = snap.tabs || [];
+        if (tabs.length === 0) return null;
+        return tabs.slice().sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))[0];
+      }
+
+      function render(snap) {
+        $('adapter').textContent = 'adapter: ' + (snap.adapter || '—');
+        const tab = pickTab(snap);
+        if (!tab) return;
+
+        $('buyer').textContent = `buyer ${tab.buyerId}`;
+
+        // Big number, flashing whenever it moves.
+        const bal = fmt(tab.balance);
+        $('balanceNum').textContent = bal;
+        if (lastBalance !== null && lastBalance !== bal) {
+          const el = $('balance');
+          el.classList.remove('flash');
+          void el.offsetWidth;
+          el.classList.add('flash');
+        }
+        lastBalance = bal;
+
+        $('status').className = 'pill ' + tab.status;
+        $('status').textContent = tab.status;
+
+        // Credit line usage.
+        const limit = cents(tab.creditLimit) || 1;
+        const pct = Math.min(100, Math.round((cents(bal) / limit) * 1000) / 10);
+        const fill = $('fill');
+        fill.style.width = pct + '%';
+        fill.className = 'fill' + (pct >= 100 ? ' over' : pct >= 80 ? ' hot' : '');
+        $('limitLabel').textContent = `$${bal} of $${fmt(tab.creditLimit)} credit · ${pct}%`;
+
+        const threshold = window.__threshold;
+        if (threshold) {
+          const tpct = Math.min(100, (cents(threshold) / limit) * 100);
+          const mk = $('marker');
+          mk.hidden = false;
+          mk.style.left = `calc(${tpct}% - 1px)`;
+          $('thresholdLabel').textContent = `invoices at $${threshold}`;
+        }
+
+        const invoices = (snap.invoices || []).filter((i) => i.buyerId === tab.buyerId);
+        const unpaid = invoices.filter((i) => i.status === 'sent');
+        const paid = invoices.filter((i) => i.status === 'paid');
+        $('calls').textContent = String(tab.entries.filter((e) => e.type === 'charge').length);
+        $('outstanding').textContent = '$' + centsToStr(unpaid.reduce((s, i) => s + cents(i.amount), 0));
+        $('settled').textContent = '$' + centsToStr(paid.reduce((s, i) => s + cents(i.amount), 0));
+        $('cycles').textContent = String(paid.length);
+        $('ref').textContent = unpaid[0] ? `awaiting payout · ${unpaid[0].referenceId}` : '';
+
+        renderRows(tab);
+        renderTerm(snap.cliLog || []);
+        firstPaint = false;
+      }
+
+      function centsToStr(c) {
+        const sign = c < 0 ? '-' : '';
+        const a = Math.abs(c);
+        return `${sign}${Math.floor(a / 100)}.${String(a % 100).padStart(2, '0')}`;
+      }
+
+      function renderRows(tab) {
+        const recent = tab.entries.slice(-14).reverse();
+        $('rowsEmpty').hidden = recent.length > 0;
+        const tbody = $('rows');
+        tbody.innerHTML = '';
+        for (const e of recent) {
+          const key = tab.buyerId + ':' + e.id;
+          const tr = document.createElement('tr');
+          const isNew = !seenEntries.has(key) && !firstPaint;
+          if (isNew) tr.className = 'row-new';
+          seenEntries.add(key);
+          tr.innerHTML = `
+            <td>${clock(e.ts)}</td>
+            <td><span class="tag">${e.type}</span></td>
+            <td class="t-${e.type}">${e.toolName || (e.referenceId || '—')}</td>
+            <td class="amt t-${e.type}">${e.type === 'charge' ? '+' : ''}${e.amount}</td>
+            <td class="amt">${e.balanceAfter}</td>`;
+          tbody.appendChild(tr);
+        }
+      }
+
+      function renderTerm(cliLog) {
+        const term = $('term');
+        // The ledger was reset (a fresh demo run) — start the log over.
+        if (cliLog.length < seenCli) {
+          seenCli = 0;
+          term.innerHTML = '<div class="empty">waiting for settlement activity…</div>';
+        }
+        if (cliLog.length === 0) return;
+        if (seenCli === 0) term.innerHTML = '';
+        for (const c of cliLog.slice(seenCli)) {
+          const div = document.createElement('div');
+          div.className = 'l ' + c.actor + (firstPaint ? '' : ' fresh');
+          div.innerHTML =
+            `<span class="who">${c.actor}</span><span class="arrow">$</span><span>${escapeHtml(c.command)}</span>`;
+          term.appendChild(div);
+        }
+        if (cliLog.length > seenCli) {
+          seenCli = cliLog.length;
+          term.scrollTop = term.scrollHeight;
+        }
+      }
+
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+      }
+
+      boot();
+    </script>
+  </body>
+</html>

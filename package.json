@@ -1,0 +1,32 @@
+{
+  "name": "agent-tab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Tab \u2014 credit & settlement layer for the AI agent economy",
+  "engines": {
+    "node": ">=20.10"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "typecheck": "tsc -b",
+    "test": "npm run build && node --test \"packages/*/dist/test/*.test.js\"",
+    "self-test": "npm run build && node demo/self-test.mjs",
+    "ledger:ui": "node packages/ledger-ui/dist/src/serve.js",
+    "buyer-kit": "node packages/buyer-kit/dist/src/bin/buyer-kit.js",
+    "example-server": "node packages/example-server/dist/src/bin/server.js",
+    "tab-mcp": "node packages/tab-mcp/dist/src/bin/server.js",
+    "demo": "./demo/run-demo.sh",
+    "verify:chains": "node scripts/verify-chains.mjs",
+    "capture:help": "node -e \"import('@tab/core').then(async m => { const files = await new m.CliAdapter().captureHelp(); console.error(`captured ${files.length} files`); })\"",
+    "test:cli": "npm run build && TAB_ADAPTER=cli node --test \"packages/*/dist/test/*.test.js\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}
