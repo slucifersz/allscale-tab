@@ -52,10 +52,13 @@ From `node scripts/cli-probe.mjs`:
 | authorization check | `payout status`.`authorized_pairs` | **live-ok** | `sepolia(id 11) × USDT is delegated · pairs: 6/USDT 11/USDT 6/USDC 11/USDC` |
 | `listTransactions` | `transaction list --json` | **live-ok** | 11 rows, 11 with `amount_coins` |
 | `sendInvoice` | `invoice send --json` | **live-ok** | sent for real: `payment_id=6a7c2e355e6314ae1628920c`, read back as `status:1 amount_coins:"0.50" memo:"tab-probe-20260812082618"` |
-| `sendPayout` | `payout send --json` | **blocked** | `ALLSCALE_STORE_API_KEY` / `ALLSCALE_STORE_API_SECRET` absent — `payout send` authenticates with the STORE key, not the CLI login |
-| `claimPayout` | `claim-link claim --json` | **blocked** | needs a claim token from `payout send` |
+| `sendPayout` | `payout send --json` | **live-ok** | funded two real Sepolia claim links through this code: `tab-probe-20260812081420` → deposit `0xda7d86d4…`, `tab-probe-20260812094814` → deposit `0x8b2760ed…` |
+| `claimPayout` | `claim-link claim --json` | **live-ok** | one on-chain claim: `claim_tx_hash=0xb9f80573…`, link `status 2 → 4`, wallet `→ 195.371795 USDT` |
 
-Totals: **5 live-ok · 0 argv-only · 2 blocked · 0 error.**
+Totals: **7 live-ok · 0 argv-only · 0 blocked · 0 error.**
+
+Without store credentials `sendPayout` still fails closed (`CLI_AUTH_MISSING`) before any
+network call — that path is covered by test 5 above.
 
 `sendInvoice` requires `--write --to <a valid email>`; without it the probe refuses to run
 rather than mailing a placeholder address (exit 2).
@@ -95,31 +98,57 @@ in `DIFF.md`.
 | Latency | ~0 ms (`latencyMs` configurable) | `payout status` ~0.6 s; `payout send` up to 120 s (CLI's own timeout) |
 | Credentials | none | agent-key session + store key/secret |
 
-## 5. What remains unverified, and exactly what it needs
+## 5. `payout send` is now closed — and the one failure mode that is not
 
-**`payout send` has not run through this code against the live API** — it needs the STORE
-credentials, which are not present in this environment. The claim half HAS now been proven
-live (see the rescue above), and every other method is live-verified. To close the last gap:
+Every adapter method has been exercised against the live API. `payout send` ran through this
+code twice with store credentials in the shell, and both calls moved real Sepolia funds:
+
+| Reference id | Link | Funding deposit | Outcome |
+| --- | --- | --- | --- |
+| `tab-probe-20260812081420` | `6a7c2b77…` | `0xda7d86d42d9640304f2aba5aea06ea7ca9c48c14840468909436a9e531db60f0` | **claimed** — `0xb9f80573c68d591ce2d2505e61415916383c0c5c342dfe1a037771f08e0b4ec1` |
+| `tab-probe-20260812094814` | `6a7c4172…` | `0x8b2760ed7bc5e464203c31220a0b779779c57eea08193f9aa91cb247fab865ba` | **refunded on expiry** — `0xe208d79c41d8f79505058678e4d483689109e4dd50164d0e7b59c4f0d0915d02` |
+
+What those two runs settle:
+
+1. the payout API **does** accept `--chain sepolia` (closes D7 in `DIFF.md`);
+2. the `payout send` response field names mapped in `toPayoutResult` are right — the returned
+   `claim_link_id` and token resolved to a real link on both runs;
+3. `claim-link status` returns `LINK_SENT` + `is_claimable`; no `funding_pending` was ever
+   observed, the pre-claim state is `pending_deposit` from the *claim*, not the status read;
+4. `claim_tx_hash` is a plain 32-byte hex tx hash, and the wallet balance moved to match;
+5. the claim window on a `payout send`-created link is **~21 minutes** — 21m14s and 21m05s
+   between `created_at` and `expiry_at` on the two links above.
+
+**The gap is no longer a credential gap, it is a liveness one.** The second run is the failure
+mode in full: funding confirmed on chain, the in-process claim gave up before the deposit
+settled, nothing retried, the link expired and the money went back to the buyer while the bill
+stayed unpaid. `waitForClaimable` budgets `TAB_CLAIM_WAIT_MS` (default **300 s**) and then
+throws `CLAIM_NOT_READY` on the reasoning that a caller will retry inside the remaining window.
+`cli-probe.mjs` is one-shot, so for the probe there is no next pass — and 300 s sits right on
+top of the observed deposit latency (~5–6 min on run 1), so it is a coin flip rather than a
+margin. The buyer kit, which polls, is the intended caller and does retry.
+
+Two consequences worth acting on: raise the default wait above the observed deposit latency,
+and have any one-shot caller either poll to the window's edge or hand the link id back for
+recovery. A funded-but-unclaimed link is recoverable until it expires:
+
+```bash
+allscale claim-link get <claim-link-id> --select 'id status amount claim_url' --json
+allscale claim-link status --claim-url <url> --json
+allscale claim-link claim  --claim-url <url> --to-wallet --json
+```
+
+One caveat on the claim leg: the only **successful** claim used `--claim-url`. The
+`--claim-token` path got as far as a backend deposit check (`pending_deposit`, exit 12), which
+proves the token is accepted as a valid locator, but no claim has yet completed through it.
+
+To reproduce either leg:
 
 ```bash
 export ALLSCALE_STORE_API_KEY=ak_…          # store key, NOT your login
 export ALLSCALE_STORE_API_SECRET=…          # never pass as a flag — shell history
-node scripts/cli-probe.mjs --write          # funds one 0.50 USDT claim link, then claims it
+TAB_CLAIM_WAIT_MS=900000 node scripts/cli-probe.mjs --write   # funds 0.50 USDT, then claims
 ```
-
-That single run would confirm, in order:
-
-1. `<derived payout API>` accepts `--chain sepolia` (D7 in `DIFF.md`);
-2. the `payout send` response field names (`claim_link_id`, `token`, `claim_url`,
-   `idempotent_hit`, `status`) as mapped in `toPayoutResult`;
-3. the real `status` vocabulary, including whether `funding_pending` appears
-   (`claim-link status` is confirmed to return `LINK_SENT` + `is_claimable`);
-4. that `claim-link claim --claim-token … --to-wallet` delivers, and what `claim_tx_hash`
-   looks like;
-5. the actual claim window on a `payout send`-created link.
-
-Until then the code fails closed rather than guessing: no store key → `CLI_AUTH_MISSING`
-before any network call.
 
 The seller leg can be confirmed separately, and only emails yourself:
 

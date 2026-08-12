@@ -1,13 +1,14 @@
 # Real CLI vs. the assumed surface in the design brief (§4)
 
-Captured from `@allscale/cli/0.1.0 darwin-arm64` on 2026-08-12, against an internal
-pre-release environment. Every claim below was verified against that CLI's own `--help`
-output and live responses.
+Captured from `@allscale/cli/0.1.0 darwin-arm64` on 2026-08-12, against an internal test
+environment. Every claim below was verified against that CLI's own `--help` output and live
+responses.
 
-The raw `--help` capture is deliberately NOT published — it is the complete command surface
-of an unreleased product. Reproduce it locally with `npm run capture:help`, which writes to
-the git-ignored `docs/cli-help/`. Hostnames and environment names are replaced with
-placeholders throughout.
+The raw `--help` capture is not committed — it is a bulk copy of another project's
+documentation, and it is reproducible in one command against whatever version you have
+installed, which is more useful than a snapshot of ours. Run `npm run capture:help`; it writes
+to the git-ignored `docs/cli-help/`. Hostnames and environment names are replaced with
+placeholders throughout this file.
 
 Legend: **S** = shape difference (the design assumed the wrong model) · **F** = flag/field
 difference · **B** = behavioural difference that can lose money.
@@ -144,7 +145,7 @@ makes the authorization check return `unknown`, never `denied` — the CLI stays
 > `--payout-api-base` … Defaults to the trusted partner API matching the configured session
 > environment, otherwise `<partner payout API default>`.
 
-With this gamma-bound build the derived origin is printed on stdout as an event:
+Whatever it derives, the origin is printed on stdout as an event:
 
 ```json
 {"version":"1","event":"payout_destination","payout_api_base":"<derived payout API>"}
@@ -316,15 +317,19 @@ documented, so nothing in the code branches on these numbers — the code uses
 
 1. The full `status` vocabulary of the payout API (D11) — Tab keeps the raw string.
 2. Numeric `status` on claim links (2/4/5 per D19 — inferred, and not relied upon in code).
-3. Whether `<derived payout API>` accepts `--chain sepolia` — this needs one real
-   `payout send`, which needs store credentials (see below).
+3. A completed claim through `--claim-token`. The token is accepted as a locator — it reached a
+   backend deposit check — but the only claim that has actually completed used `--claim-url`.
 4. The undocumented internal chain ids (D6) — empirical, and `verify:chains` re-checks them.
 
-## What could not be exercised live
+## What has been exercised live
 
-`payout send` authenticates with **store** API credentials
-(`ALLSCALE_STORE_API_KEY` / `ALLSCALE_STORE_API_SECRET`), not the CLI login. They are not
-present in this environment:
+Everything. The read and seller legs run on the agent-key session (scopes `invoice:all`,
+`claim_link:all`, `wallet:read_only`, `transaction:read_only`, `store:all`): `payout status`,
+`wallet list`, `claim-link list`, `invoice send`, `transaction list`.
+
+`payout send` authenticates separately, with **store** API credentials
+(`ALLSCALE_STORE_API_KEY` / `ALLSCALE_STORE_API_SECRET`) rather than the CLI login — absent
+those, it stops before the network:
 
 ```
 $ allscale payout send --amount 0.10 --chain base --stable-coin USDT --reference-id tab-probe-unauth-001 --json
@@ -332,7 +337,7 @@ $ allscale payout send --amount 0.10 --chain base --stable-coin USDT --reference
 {"error":{"code":"input.invalid","message":"Missing store API key. Pass --api-key or set ALLSCALE_STORE_API_KEY."}}
 ```
 
-Everything reachable with the current agent-key session (scopes `invoice:all`,
-`claim_link:all`, `wallet:read_only`, `transaction:read_only`, `store:all`) **was** exercised
-live: `payout status`, `wallet list`, `claim-link list`, `invoice send`, `transaction list`.
-See [`cli-mode-report.md`](cli-mode-report.md).
+With them present it funded two real Sepolia links through this adapter, one of which was
+claimed on chain and one of which expired unclaimed and refunded. Both, with tx hashes and what
+the refund says about the claim-wait default, are in
+[`cli-mode-report.md`](cli-mode-report.md) §5.

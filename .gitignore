@@ -19,8 +19,8 @@ credentials.json
 *.pem
 *.p12
 
-# captured CLI --help output: the full command surface of an unreleased
-# product. Reproduce locally with `npm run capture:help`; never commit it.
+# captured CLI --help output: another project's docs, and reproducible in one
+# command. Regenerate with `npm run capture:help` instead of committing it.
 docs/cli-help/
 
 # logs / os

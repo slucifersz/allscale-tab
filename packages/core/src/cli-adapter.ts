@@ -268,7 +268,7 @@ export class CliAdapter implements SettlementAdapter {
           reject(
             new TabError(
               'CLI_NOT_AVAILABLE',
-              `${this.bin} not found on PATH — install the AllScale CLI (private beta)`,
+              `${this.bin} not found on PATH — install the AllScale CLI: npm install -g @allscale/cli`,
               { bin: this.bin },
             ),
           );

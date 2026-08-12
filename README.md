@@ -1,4 +1,4 @@
-# Tab
+# AllScale Tab
 
 **Credit and settlement for the AI agent economy.** Put one middleware in front of any
 MCP server and the agents calling it can run a tab: consume now, settle on terms.
@@ -23,7 +23,7 @@ agent ──MCP──▶ [ tab middleware ] ──▶ your tools
 
 ```bash
 npm install
-npm test              # unit + end-to-end tests (100)
+npm test              # unit + end-to-end tests (108)
 npm run self-test     # live checklist: accumulate → invoice → fund → claim → 402
 ./demo/run-demo.sh
 ```
@@ -31,6 +31,7 @@ npm run self-test     # live checklist: accumulate → invoice → fund → clai
 With the AllScale CLI installed and logged in, these check it directly:
 
 ```bash
+npm install -g @allscale/cli   # then: allscale device-login
 npm run capture:help    # capture the CLI surface locally (git-ignored)
 npm run verify:chains   # re-derive the chain id table, fail on drift
 node scripts/cli-probe.mjs   # per-method: live-ok / argv-only / blocked
@@ -143,7 +144,7 @@ Every money movement — and only these — goes through `SettlementAdapter`:
 | `enableFence` | *(no CLI command — granted in the dashboard)*, confirmed with `allscale payout status --json` |
 | `fenceStatus` | `allscale payout status --json` |
 | `sendPayout` | `allscale payout send --amount … --chain … --stable-coin … --reference-id … [--receiver-email …] --json` |
-| `claimPayout` | `allscale claim-link claim --claim-token … --to-wallet --json` |
+| `claimPayout` | `allscale claim-link claim --claim-token … --to-wallet --json` (a link can also be claimed by `--claim-url …`) |
 | `sendInvoice` | `allscale invoice send --to-email … --amount … --line "desc\|qty\|total" --wallet-id … --payment-type 1 --memo … --json` |
 | `listTransactions` | `allscale transaction list --json` |
 
@@ -155,16 +156,28 @@ claim is proven. Authorization is granted per **chain × token pair** in the das
 (Store Settings → Payout Authorization); an undelegated pair is refused with
 `FENCE_NOT_AUTHORIZED`.
 
+If a claim is lost mid-flight — the process dies after funding, or the claim races the
+on-chain deposit and exits `pending_deposit` — the link is still recoverable by id for as long
+as it has not expired, because `claim-link get` will hand back the `claim_url`:
+
+```bash
+allscale claim-link get <claim-link-id> --select 'id status amount claim_url' --json
+allscale claim-link status --claim-url <url> --json    # wait for is_claimable: true
+allscale claim-link claim  --claim-url <url> --to-wallet --json
+```
+
 Defaults are `sepolia` / `USDT`, set with `TAB_CHAIN` and `TAB_STABLE_COIN`.
 
 `TAB_ADAPTER=stub` (default) runs the local stub. `TAB_ADAPTER=cli` targets the real CLI.
 
-**The CLI adapter requires the AllScale CLI, which is in private beta.** It is implemented
-against the real command surface: every flag was read off `--help`, and every difference from
-the original design assumptions is itemised in [`docs/DIFF.md`](docs/DIFF.md). What has and has
-not been verified against the live API is recorded in
-[`docs/cli-mode-report.md`](docs/cli-mode-report.md) — notably the payout + claim leg needs
-store credentials to exercise, and fails closed without them.
+**The CLI adapter requires the AllScale CLI** — `npm install -g @allscale/cli`. It is
+implemented against the real command surface: every flag was read off `--help`, and every
+difference from the original design assumptions is itemised in [`docs/DIFF.md`](docs/DIFF.md).
+Every adapter method has now been exercised against the live API: `payout send` funded real
+claim links on Sepolia and one was claimed on chain. The per-method evidence — and the one
+failure mode still open, an unattended claim that can time out and let the link refund — is in
+[`docs/cli-mode-report.md`](docs/cli-mode-report.md). Without store credentials the payout leg
+fails closed (`CLI_AUTH_MISSING`) before any network call.
 
 Ambiguous outcomes are never treated as failures: on an ambiguous exit or a timeout, Tab
 checks `payout status` first, then retries the **same** `--reference-id`, which the backend
@@ -207,3 +220,7 @@ Deliberately out of scope for this build:
 ## Requirements
 
 Node.js ≥ 20.10, npm. TypeScript is compiled to `dist/` — no runtime type-stripping needed.
+
+## License
+
+MIT — see [`LICENSE`](LICENSE).

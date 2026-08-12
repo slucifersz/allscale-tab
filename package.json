@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Tab \u2014 credit & settlement layer for the AI agent economy",
+  "description": "AllScale Tab \u2014 credit & settlement layer for the AI agent economy",
+  "license": "MIT",
   "engines": {
     "node": ">=20.10"
   },
