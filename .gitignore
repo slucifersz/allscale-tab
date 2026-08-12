@@ -19,9 +19,6 @@ credentials.json
 *.pem
 *.p12
 
-# internal task brief / working notes: kept locally, never published.
-the design brief
-
 # captured CLI --help output: the full command surface of an unreleased
 # product. Reproduce locally with `npm run capture:help`; never commit it.
 docs/cli-help/

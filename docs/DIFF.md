@@ -1,4 +1,4 @@
-# Real CLI vs. the assumed surface in the design brief §4
+# Real CLI vs. the assumed surface in the design brief (§4)
 
 Captured from `@allscale/cli/0.1.0 darwin-arm64` on 2026-08-12, against an internal
 pre-release environment. Every claim below was verified against that CLI's own `--help`
@@ -249,7 +249,7 @@ Tab treats its own cap comparison as advisory and lets the backend be the author
 
 ## D16 · Other commands, corrected — **F**
 
-| the design brief §4 | Real |
+| Design brief §4 | Real |
 | --- | --- |
 | `invoice list --select "id,status,amount"` | `--select` takes a **GraphQL fragment**, e.g. `items { id status amount_coins … }`; `-s` is the short form |
 | `transaction list --all`, "default my_transactions" | `--scope mine\|business\|activities` selects the view; amounts are `amount_coins` / `amount_cents`; `tx_hash` etc. under `items` |
