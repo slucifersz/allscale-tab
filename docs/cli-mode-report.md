@@ -79,7 +79,7 @@ The link went `status 2 → 4` and the Sepolia wallet went `→ 195.371795 USDT`
 ~16 minutes still on the clock.
 
 `claimPayout` now polls `claim-link status` until `is_claimable` before claiming — see D17/D18
-in `cli-help/DIFF.md`.
+in `DIFF.md`.
 
 ## 4. Behavioural differences between the modes
 
@@ -109,7 +109,7 @@ node scripts/cli-probe.mjs --write          # funds one 0.50 USDT claim link, th
 
 That single run would confirm, in order:
 
-1. `<derived payout API>` accepts `--chain sepolia` (D7 in `cli-help/DIFF.md`);
+1. `<derived payout API>` accepts `--chain sepolia` (D7 in `DIFF.md`);
 2. the `payout send` response field names (`claim_link_id`, `token`, `claim_url`,
    `idempotent_hit`, `status`) as mapped in `toPayoutResult`;
 3. the real `status` vocabulary, including whether `funding_pending` appears

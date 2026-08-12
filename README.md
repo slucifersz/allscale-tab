@@ -31,7 +31,7 @@ npm run self-test     # live checklist: accumulate → invoice → fund → clai
 With the AllScale CLI installed and logged in, these check it directly:
 
 ```bash
-npm run capture:help    # refresh docs/cli-help/ from the installed CLI
+npm run capture:help    # capture the CLI surface locally (git-ignored)
 npm run verify:chains   # re-derive the chain id table, fail on drift
 node scripts/cli-probe.mjs   # per-method: live-ok / argv-only / blocked
 npm run test:cli        # the suite with TAB_ADAPTER=cli
@@ -160,10 +160,9 @@ Defaults are `sepolia` / `USDT`, set with `TAB_CHAIN` and `TAB_STABLE_COIN`.
 `TAB_ADAPTER=stub` (default) runs the local stub. `TAB_ADAPTER=cli` targets the real CLI.
 
 **The CLI adapter requires the AllScale CLI, which is in private beta.** It is implemented
-against the real command surface: every flag was read off `--help`, the captured output is in
-[`docs/cli-help/`](docs/cli-help/), and every difference from the original design assumptions
-is itemised in [`docs/cli-help/DIFF.md`](docs/cli-help/DIFF.md). What has and has not been
-verified against the live API is recorded in
+against the real command surface: every flag was read off `--help`, and every difference from
+the original design assumptions is itemised in [`docs/DIFF.md`](docs/DIFF.md). What has and has
+not been verified against the live API is recorded in
 [`docs/cli-mode-report.md`](docs/cli-mode-report.md) — notably the payout + claim leg needs
 store credentials to exercise, and fails closed without them.
 

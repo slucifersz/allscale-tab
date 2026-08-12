@@ -46,7 +46,7 @@ export interface AuthorizedPair {
  * Field names below map 1:1 onto that command's documented default selection
  * set: `provisioned active session_expires_at total_cap_usd used_usd
  * remaining_usd per_transaction_limit authorized_pairs { chain token_symbol
- * policy_id }` (docs/cli-help/payout-status.txt).
+ * policy_id }` (`allscale payout status --help`).
  *
  * NOTE the unit mismatch: caps are USD (`*_usd`), while a payout amount is in
  * token units. For USDT/USDC that is ~1:1 but it is NOT the same unit, so Tab

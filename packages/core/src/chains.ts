@@ -13,14 +13,14 @@
  * so a mapping is unavoidable. It is NOT documented anywhere, so the table below
  * was read off live `allscale wallet list --json` output, whose rows carry
  * `chain`, `chain_name` and `eip155_chain_id` together. See
- * docs/cli-help/DIFF.md item D6.
+ * docs/DIFF.md item D6.
  *
  * Because it is empirical, nothing here is treated as authoritative: an unknown
  * slug or id makes an authorization check return `unknown` rather than `denied`,
  * and the CLI stays the only thing that can actually refuse a payout.
  */
 
-/** Chain slugs `payout send --chain` accepts (from docs/cli-help/payout-send.txt). */
+/** Chain slugs `payout send --chain` accepts (from `allscale payout send --help`). */
 export const PAYOUT_CHAIN_SLUGS = [
   'ethereum',
   'bsc',
@@ -51,8 +51,8 @@ export interface ChainInfo {
 }
 
 /**
- * Observed on 2026-08-12 from `allscale wallet list --json` against
- * api-base <internal test environment>.
+ * Observed on 2026-08-12 from `allscale wallet list --json`, against whichever API base the
+ * CLI session is bound to (see `allscale build-info`; override with ALLSCALE_API_BASE).
  *
  * TODO: re-verify after any CLI/backend upgrade; ids are backend-defined and
  * could change. `npm run verify:chains` re-reads them from a live wallet list.

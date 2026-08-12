@@ -15,7 +15,7 @@
  *
  * FIDELITY RULES (the design brief §4 M1)
  * --------------------------------
- * Field names mirror the verified CLI surface (docs/cli-help/). Anything the
+ * Field names mirror the verified CLI surface (see docs/DIFF.md). Anything the
  * real CLI does not document stays under `raw`, and stub-generated values are
  * prefixed `stub_` so no demo output can be mistaken for a real settlement.
  */

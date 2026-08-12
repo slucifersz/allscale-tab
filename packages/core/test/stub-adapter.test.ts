@@ -23,7 +23,7 @@ import { StubAdapter } from '../src/stub-adapter.js';
 /**
  * Fidelity guard (the design brief §4 M1): the only vocabulary allowed at the top level
  * of an adapter result is what the verified CLI surface uses. Everything else
- * lives under `raw`. The allow-lists below are traceable to docs/cli-help/.
+ * lives under `raw`. The allow-lists below are traceable to docs/DIFF.md.
  */
 function assertNoInventedFields(obj: object, allowed: string[], label: string): void {
   const extra = Object.keys(obj).filter((k) => !allowed.includes(k));
@@ -433,7 +433,7 @@ describe('cli output parsing', () => {
   it('reads the last document when the CLI prints progress events first', () => {
     // Real `payout send` output: an event line, then the result.
     const stdout =
-      '{"version":"1","event":"payout_destination","payout_api_base":"<derived payout API>"}\n' +
+      '{"version":"1","event":"payout_destination","payout_api_base":"https://payout-api.example"}\n' +
       '{"data":{"claim_link_id":"abc","status":"funded"}}\n';
     const events = parseJsonStream(stdout);
     assert.equal(events.length, 2);
@@ -600,11 +600,11 @@ describe('claim link status — the asynchronous deposit', () => {
       'allscale claim-link status --claim-token *** --json',
     );
     assert.equal(
-      echoClaimStatus({ claimUrl: '<internal test environment>/claim/secret' }),
+      echoClaimStatus({ claimUrl: 'https://claim.example/claim/secret' }),
       'allscale claim-link status --claim-url *** --json',
     );
     assert.equal(
-      echoClaim({ claimUrl: '<internal test environment>/claim/secret' }),
+      echoClaim({ claimUrl: 'https://claim.example/claim/secret' }),
       'allscale claim-link claim --claim-url *** --to-wallet --json',
     );
   });

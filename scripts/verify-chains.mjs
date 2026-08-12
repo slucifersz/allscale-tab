@@ -4,7 +4,7 @@
  * fail if it has drifted from chains.ts.
  *
  * The numeric chain ids are backend-defined and undocumented (see
- * docs/cli-help/DIFF.md item D6), so the table in chains.ts is empirical. This
+ * docs/DIFF.md item D6), so the table in chains.ts is empirical. This
  * script is how it gets re-checked rather than trusted indefinitely.
  *
  *   node scripts/verify-chains.mjs

@@ -11,11 +11,17 @@ dist/
 # credentials — never commit
 .env
 .env.*
+# …but the template carries variable NAMES only, so it is tracked.
+!.env.example
 credentials
 credentials.json
 *.key
 *.pem
 *.p12
+
+# captured CLI --help output: the full command surface of an unreleased
+# product. Reproduce locally with `npm run capture:help`; never commit it.
+docs/cli-help/
 
 # logs / os
 *.log

@@ -2,8 +2,9 @@
  * CliAdapter — real settlement through the AllScale CLI.
  *
  * Every flag and field name here was verified against the installed CLI; the
- * captured `--help` output lives in docs/cli-help/ and the differences from the
- * original design assumptions are itemised in docs/cli-help/DIFF.md.
+ * `--help` capture is reproducible locally with `npm run capture:help` (written to the
+ * git-ignored docs/cli-help/), and the differences from the original design
+ * assumptions are itemised in docs/DIFF.md.
  *
  * THREE THINGS THAT SHAPE THIS FILE
  * ---------------------------------
@@ -154,8 +155,8 @@ export interface CliRunResult {
  * Subcommands whose `--help` we capture as the source of truth for flag names.
  *
  * `payout enable` is deliberately still in the list: it does NOT exist on the
- * real CLI, and having its failure recorded in docs/cli-help/ is the evidence
- * for that (see docs/cli-help/DIFF.md).
+ * real CLI, and having its failure recorded in the local capture is the evidence
+ * for that (see docs/DIFF.md).
  */
 export const HELP_TARGETS: string[][] = [
   [],

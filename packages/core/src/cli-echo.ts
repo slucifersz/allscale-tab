@@ -5,7 +5,7 @@
  * CliAdapter builds its argv from the same helpers that render these strings,
  * so what the demo prints is what actually runs (modulo redacted secrets).
  *
- * Every flag here was read off `--help` and is captured in docs/cli-help/.
+ * Every flag here was read off the CLI's own `--help`; see docs/DIFF.md.
  */
 import type { EnableFenceParams, SendInvoiceParams, SendPayoutParams } from './adapter.js';
 import { normalizeChain, normalizeStableCoin, paymentTypeForCoin } from './chains.js';
@@ -38,7 +38,7 @@ export function echoPayoutStatus(): string {
 //
 // NOTE: there is no --expires here. `claim-link create` has one (default 14d);
 // `payout send` does not, so the claim window is whatever the payout API
-// assigns — observed ~21 minutes. See docs/cli-help/DIFF.md item D3.
+// assigns — observed ~21 minutes. See docs/DIFF.md item D3.
 // ---------------------------------------------------------------------------
 
 export function payoutSendArgv(p: SendPayoutParams): string[] {
@@ -131,7 +131,7 @@ export function echoClaim(p: ClaimArgvParams): string {
 //
 // NOTE the --line semantics: "<description>|<quantity>|<amount>" where amount is
 // the LINE TOTAL, not a unit price. With three-field lines the CLI sums them to
-// derive the invoice total. See docs/cli-help/DIFF.md item D4.
+// derive the invoice total. See docs/DIFF.md item D4.
 // ---------------------------------------------------------------------------
 
 /** `desc|qty|lineTotal` — qty × unitPrice, not the unit price. */
